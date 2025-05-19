@@ -22,24 +22,25 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 # --- replace your current route with this one ------------------------
+# ─── WEBHOOK ──────────────────────────────────────────────────────────
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-    # 1️⃣  Gupshup’s validator (and Meta’s verify) use GET
+    # A. Gupshup (and curl -I) hit GET first — answer 200 *before* touching JSON
     if request.method == "GET":
-        # any 2xx will satisfy the validator
         return jsonify({"status": "ok"}), 200
 
-    # 2️⃣  For POST we can now safely parse JSON
-    payload = request.get_json(silent=True)  # ← silent avoids 400 on bad / empty JSON
+    # B. All real messages are POST with JSON. 'silent=True' avoids auto-400.
+    payload = request.get_json(silent=True)
     if payload is None:
         return jsonify({"status": "error", "msg": "no json"}), 400
 
-    # ---------- your existing logic ----------
-    sender  = payload["payload"]["sender"]["phone"]
+    # --- extract data & reply (your existing logic) -------------------
+    sender = payload["payload"]["sender"]["phone"]
     text_in = payload["payload"]["payload"]["text"]
-    text_out = decide_reply(text_in)          # the helper we built earlier
-    send_message(sender, text_out)            # push reply back to Gupshup
-    return jsonify({"status": "ok"}), 200     # <-- always 200 on success
+    text_out = decide_reply(text_in)
+    send_message(sender, text_out)
+
+    return jsonify({"status": "ok"}), 200
 
 
 
