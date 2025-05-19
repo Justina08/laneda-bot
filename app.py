@@ -21,20 +21,26 @@ SOURCE_PHONE    = "447495867459"          # your approved WhatsApp number
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
+# --- replace your current route with this one ------------------------
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-    # 1️⃣  Gupshup’s validator (and WhatsApp's verify) use GET
+    # 1️⃣  Gupshup’s validator (and Meta’s verify) use GET
     if request.method == "GET":
-        # They just need any 2xx to accept the URL
+        # any 2xx will satisfy the validator
         return jsonify({"status": "ok"}), 200
 
     # 2️⃣  For POST we can now safely parse JSON
-    payload = request.get_json(silent=True)   # silent avoids 400 if body is empty
+    payload = request.get_json(silent=True)  # ← silent avoids 400 on bad / empty JSON
     if payload is None:
         return jsonify({"status": "error", "msg": "no json"}), 400
 
-    # --- your existing message-handling logic here ---
-    ...
+    # ---------- your existing logic ----------
+    sender  = payload["payload"]["sender"]["phone"]
+    text_in = payload["payload"]["payload"]["text"]
+    text_out = decide_reply(text_in)          # the helper we built earlier
+    send_message(sender, text_out)            # push reply back to Gupshup
+    return jsonify({"status": "ok"}), 200     # <-- always 200 on success
+
 
 
 
