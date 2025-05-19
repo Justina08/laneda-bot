@@ -21,10 +21,21 @@ SOURCE_PHONE    = "447495867459"          # your approved WhatsApp number
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
-@app.route("/", methods=["GET"])
-def home():
-    """Health-check endpoint – useful for uptime pingers."""
-    return "✅ LanedaBot is live on Railway!", 200
+@app.route("/webhook", methods=["GET", "POST"])
+def webhook():
+    # 1️⃣  Gupshup’s validator (and WhatsApp's verify) use GET
+    if request.method == "GET":
+        # They just need any 2xx to accept the URL
+        return jsonify({"status": "ok"}), 200
+
+    # 2️⃣  For POST we can now safely parse JSON
+    payload = request.get_json(silent=True)   # silent avoids 400 if body is empty
+    if payload is None:
+        return jsonify({"status": "error", "msg": "no json"}), 400
+
+    # --- your existing message-handling logic here ---
+    ...
+
 
 
 # BEFORE
