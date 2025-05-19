@@ -21,49 +21,24 @@ SOURCE_PHONE    = "447495867459"          # your approved WhatsApp number
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
-# --- replace your current route with this one ------------------------
-# ─── WEBHOOK ──────────────────────────────────────────────────────────
+# ── single, unified route ─────────────────────────────────────────
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-    # A. Gupshup (and curl -I) hit GET first — answer 200 *before* touching JSON
+    # A. validator uses GET
     if request.method == "GET":
         return jsonify({"status": "ok"}), 200
 
-    # B. All real messages are POST with JSON. 'silent=True' avoids auto-400.
+    # B. messages come in as POST
     payload = request.get_json(silent=True)
     if payload is None:
         return jsonify({"status": "error", "msg": "no json"}), 400
 
-    # --- extract data & reply (your existing logic) -------------------
-    sender = payload["payload"]["sender"]["phone"]
+    sender  = payload["payload"]["sender"]["phone"]
     text_in = payload["payload"]["payload"]["text"]
     text_out = decide_reply(text_in)
     send_message(sender, text_out)
-
     return jsonify({"status": "ok"}), 200
 
-
-
-
-# BEFORE
-# @app.route("/webhook", methods=["POST"])
-
-# AFTER
-@app.route("/webhook", methods=["GET", "POST"])
-def webhook():
-    # 1️⃣  Gupshup’s validator (and some other handshakes) send GET
-    if request.method == "GET":
-        # You can return any 2xx response; JSON is tidy
-        return jsonify({"status": "ok"}), 200
-
-    # 2️⃣  Normal WhatsApp messages arrive as POST
-    payload = request.get_json(force=True)
-    ...
-
-    """
-    Gupshup sends every inbound message here.
-    We parse it, decide on a reply, send the reply, and ACK with 200.
-    """
     payload = request.get_json(force=True)       # force=True → 400 if no JSON
     logging.info("Webhook payload: %s", json.dumps(payload, indent=2))
 
