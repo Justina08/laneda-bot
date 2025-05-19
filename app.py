@@ -21,14 +21,13 @@ SOURCE_PHONE    = "447495867459"          # your approved WhatsApp number
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
-# ── single, unified route ─────────────────────────────────────────
-@app.route("/webhook", methods=["GET", "POST"])
+@app.route("/webhook", methods=["GET", "POST", "HEAD"])
 def webhook():
-    # A. validator uses GET
-    if request.method == "GET":
-        return jsonify({"status": "ok"}), 200
+    # accept the validator's GET **or** HEAD probe
+    if request.method in ("GET", "HEAD"):
+        return jsonify({"status": "ok"}), 200    # 2xx keeps validators happy
 
-    # B. messages come in as POST
+    # POST (real messages) -----------------------
     payload = request.get_json(silent=True)
     if payload is None:
         return jsonify({"status": "error", "msg": "no json"}), 400
@@ -37,6 +36,7 @@ def webhook():
     text_in = payload["payload"]["payload"]["text"]
     text_out = decide_reply(text_in)
     send_message(sender, text_out)
+
     return jsonify({"status": "ok"}), 200
 
     payload = request.get_json(force=True)       # force=True → 400 if no JSON
