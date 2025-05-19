@@ -21,19 +21,45 @@ SOURCE_PHONE    = "447495867459"          # your approved WhatsApp number
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
-@app.route("/webhook", methods=["GET", "POST", "HEAD"])
-def webhook():
-    # accept the validator's GET **or** HEAD probe
-    if request.method in ("GET", "HEAD"):
-        return jsonify({"status": "ok"}), 200    # 2xx keeps validators happy
+import os
+from flask import Flask, request, jsonify
 
-    # POST (real messages) -----------------------
+app = Flask(__name__)
+
+# -------------------------------------------------------------
+# 0)  Configuration
+# -------------------------------------------------------------
+VERIFY_TOKEN = os.getenv("GS_VERIFY_TOKEN", "lanedabot-secret")  # choose any string
+
+# -------------------------------------------------------------
+# 1)  Webhook route  (one definition only!)
+# -------------------------------------------------------------
+@app.route("/webhook", methods=["GET", "HEAD", "POST"])
+def webhook():
+    # A. Meta / Gupshup validator probe ------------------------
+    if request.method in ("GET", "HEAD"):
+        mode      = request.args.get("hub.mode")
+        challenge = request.args.get("hub.challenge")
+        token     = request.args.get("hub.verify_token")
+
+        # If it's the Meta-style handshake, echo the challenge
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            # must return the *raw* challenge, not JSON
+            return challenge, 200, {"Content-Type": "text/plain"}
+
+        # Otherwise it's just a HEAD probe → say OK
+        return "ok", 200
+
+    # B. Real WhatsApp messages arrive as POST -----------------
     payload = request.get_json(silent=True)
     if payload is None:
         return jsonify({"status": "error", "msg": "no json"}), 400
 
+    # --- your existing logic ---------------------------------
     sender  = payload["payload"]["sender"]["phone"]
     text_in = payload["payload"]["payload"]["text"]
+
+    # decide_reply() & send_message() are the helpers you already wrote
     text_out = decide_reply(text_in)
     send_message(sender, text_out)
 
