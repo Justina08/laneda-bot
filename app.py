@@ -27,8 +27,21 @@ def home():
     return "✅ LanedaBot is live on Railway!", 200
 
 
-@app.route("/webhook", methods=["POST"])
+# BEFORE
+# @app.route("/webhook", methods=["POST"])
+
+# AFTER
+@app.route("/webhook", methods=["GET", "POST"])
 def webhook():
+    # 1️⃣  Gupshup’s validator (and some other handshakes) send GET
+    if request.method == "GET":
+        # You can return any 2xx response; JSON is tidy
+        return jsonify({"status": "ok"}), 200
+
+    # 2️⃣  Normal WhatsApp messages arrive as POST
+    payload = request.get_json(force=True)
+    ...
+
     """
     Gupshup sends every inbound message here.
     We parse it, decide on a reply, send the reply, and ACK with 200.
