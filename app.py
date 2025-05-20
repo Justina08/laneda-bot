@@ -10,8 +10,8 @@ from flask import Flask, request, jsonify
 # ───── Configuration ─────────────────────────────────────────────────
 # (move secrets into Railway → Variables in the UI)
 GUPSHUP_API_URL = "https://api.gupshup.io/sm/api/v1/msg"
-APP_TOKEN       = os.environ["vmtlnilqraxkzfapylijqftvb1odasdj"]
-SOURCE_PHONE    = os.environ["447495867459"]
+APP_TOKEN       = os.environ["GUPSHUP_API_KEY"]
+SOURCE_PHONE    = os.environ["GUPSHUP_SOURCE"]
 
 # ───── Flask setup ────────────────────────────────────────────────────
 app = Flask(__name__)
